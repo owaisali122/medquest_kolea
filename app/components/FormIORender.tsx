@@ -11,6 +11,7 @@ interface FormIORenderProps {
   formId: number
   onSubmitUrl?: string
   submitButtonText?: string
+  initialData?: Record<string, any> // Initial form data to populate
 }
 
 /**
@@ -22,11 +23,13 @@ export default function FormIORender({
   formId,
   onSubmitUrl = '/api/forms/submit',
   submitButtonText = 'Submit',
+  initialData,
 }: FormIORenderProps) {
   const { formRef, isLoading, error, isSubmitted, submitMessage } = useFormIO({
     formSchema,
     formId,
     onSubmitUrl,
+    initialData,
   })
 
   // Show error state

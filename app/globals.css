@@ -24,3 +24,48 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Protect site header and footer from FormIO CSS overrides */
+header.bg-white {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  height: auto !important;
+  min-height: 64px !important;
+  background-color: white !important;
+}
+
+footer {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Scope FormIO styles to prevent global conflicts */
+.formio-container {
+  /* Reset any conflicting styles */
+}
+
+/* Ensure main content doesn't hide header */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix for FormIO hiding elements with certain classes */
+.formio-container header,
+.formio-container footer {
+  /* Allow FormIO internal header/footer if any */
+}
+
+/* Prevent FormIO from affecting site navigation */
+header nav {
+  display: flex !important;
+}
+
+header nav a {
+  display: flex !important;
+}

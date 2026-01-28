@@ -14,20 +14,22 @@
     "start:dev": "cross-env NODE_ENV=development next start",
     "start:qa": "cross-env NODE_ENV=qa next start",
     "start:prod": "cross-env NODE_ENV=production next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:submissions-db": "tsx scripts/setup-submissions-db.ts"
   },
   "dependencies": {
     "@formio/react": "^6.1.2",
+    "@reduxjs/toolkit": "^2.11.2",
     "formiojs": "^4.21.7",
     "next": "16.1.3",
-    "pg": "^8.17.1",
+    "postgres": "^3.4.8",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cross-env": "^10.1.0",

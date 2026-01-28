@@ -1,1 +1,2 @@
-export { StepperForm } from './StepperForm'
+export { SimpleStepperForm } from './SimpleStepperForm'
+export { TabStepperForm } from './TabStepperForm'

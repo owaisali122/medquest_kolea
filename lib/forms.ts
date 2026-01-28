@@ -1,4 +1,4 @@
-import pool from './db'
+import { adminDb } from './db'
 
 export interface Form {
   id: number
@@ -21,7 +21,7 @@ export interface Form {
  */
 export async function getFormBySlug(slug: string): Promise<Form | null> {
   try {
-    const query = `
+    const result = await adminDb`
       SELECT 
         id,
         title,
@@ -35,19 +35,16 @@ export async function getFormBySlug(slug: string): Promise<Form | null> {
         created_at,
         updated_at
       FROM forms
-      WHERE slug = $1 AND status = 'published'
+      WHERE slug = ${slug} AND status = 'published'
       LIMIT 1
     `
     
-    const result = await pool.query(query, [slug])
-    
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return null
     }
     
-    const row = result.rows[0]
+    const row = result[0]
     
-    // Parse JSON fields if they're strings (PostgreSQL might return JSON as string)
     return {
       id: row.id,
       title: row.title,
@@ -76,9 +73,7 @@ export async function getFormsBySlugs(slugs: string[]): Promise<Form[]> {
   try {
     if (slugs.length === 0) return []
     
-    const placeholders = slugs.map((_, index) => `$${index + 1}`).join(', ')
-    
-    const query = `
+    const result = await adminDb`
       SELECT 
         id,
         title,
@@ -92,13 +87,11 @@ export async function getFormsBySlugs(slugs: string[]): Promise<Form[]> {
         created_at,
         updated_at
       FROM forms
-      WHERE slug IN (${placeholders}) AND status = 'published'
-      ORDER BY array_position(ARRAY[${placeholders}], slug)
+      WHERE slug = ANY(${slugs}) AND status = 'published'
+      ORDER BY array_position(${slugs}::text[], slug)
     `
     
-    const result = await pool.query(query, slugs)
-    
-    return result.rows.map((row) => ({
+    return result.map((row) => ({
       id: row.id,
       title: row.title,
       slug: row.slug,
@@ -124,7 +117,7 @@ export async function getFormsBySlugs(slugs: string[]): Promise<Form[]> {
  */
 export async function getFormById(id: number): Promise<Form | null> {
   try {
-    const query = `
+    const result = await adminDb`
       SELECT 
         id,
         title,
@@ -138,19 +131,16 @@ export async function getFormById(id: number): Promise<Form | null> {
         created_at,
         updated_at
       FROM forms
-      WHERE id = $1 AND status = 'published'
+      WHERE id = ${id} AND status = 'published'
       LIMIT 1
     `
     
-    const result = await pool.query(query, [id])
-    
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return null
     }
     
-    const row = result.rows[0]
+    const row = result[0]
     
-    // Parse JSON fields if they're strings (PostgreSQL might return JSON as string)
     return {
       id: row.id,
       title: row.title,

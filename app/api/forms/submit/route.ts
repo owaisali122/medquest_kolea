@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/db'
+import { dataLayer } from '@/lib/dataLayer'
 import { getFormById } from '@/lib/forms'
 
 export async function POST(request: NextRequest) {
@@ -45,9 +45,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract email from submission data if available
-    let submitterEmail: string | undefined
+    let submitterEmail: string | null = null
     if (typeof data === 'object' && data !== null) {
-      // Look for common email field names
       const emailFields = ['email', 'Email', 'EMAIL', 'e-mail', 'emailAddress']
       for (const field of emailFields) {
         if (data[field] && typeof data[field] === 'string') {
@@ -68,38 +67,33 @@ export async function POST(request: NextRequest) {
     delete cleanData.submit
     delete cleanData.cancel
 
-    // Insert submission into database
-    const insertQuery = `
-      INSERT INTO form_submissions (
-        form_id, 
-        data, 
-        submitter_email, 
-        submitted_at, 
-        metadata_ip_address, 
-        metadata_user_agent, 
-        created_at, 
-        updated_at
-      )
-      VALUES ($1, $2, $3, NOW(), $4, $5, NOW(), NOW())
-      RETURNING id
-    `
-
     const ipAddr = ipAddress.split(',')[0].trim()
     const userAgentStr = userAgent.substring(0, 500)
 
-    const result = await pool.query(insertQuery, [
-      formIdNum,
-      cleanData, // PostgreSQL JSONB accepts objects directly
-      submitterEmail || null,
-      ipAddr,
-      userAgentStr,
-    ])
+    // Use data layer to create submission
+    const result = await dataLayer('submissions', 'form_submissions', 'create', {
+      data: {
+        form_id: formIdNum,
+        data: cleanData,
+        submitter_email: submitterEmail,
+        submitted_at: new Date(),
+        metadata_ip_address: ipAddr,
+        metadata_user_agent: userAgentStr,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      returning: ['id'],
+    })
 
-    console.log('Form submission saved successfully:', result.rows[0].id)
+    if (!result.success) {
+      throw new Error(result.details || result.error)
+    }
+
+    console.log('Form submission saved successfully:', result.data?.id)
 
     return NextResponse.json({
       success: true,
-      submissionId: result.rows[0].id,
+      submissionId: result.data?.id,
       message: form.settings?.successMessage || 'Thank you for your submission!',
     })
   } catch (error: any) {

@@ -6,12 +6,13 @@ interface UseFormIOOptions {
   formSchema: any
   formId: number
   onSubmitUrl: string
+  initialData?: Record<string, any> // Initial form data to populate
   onSuccess?: (message: string) => void
   onError?: (error: string) => void
 }
 
 interface UseFormIOReturn {
-  formRef: React.RefObject<HTMLDivElement>
+  formRef: React.RefObject<HTMLDivElement | null>
   isLoading: boolean
   error: string | null
   isSubmitted: boolean
@@ -25,6 +26,7 @@ export function useFormIO({
   formSchema,
   formId,
   onSubmitUrl,
+  initialData,
   onSuccess,
   onError,
 }: UseFormIOOptions): UseFormIOReturn {
@@ -113,8 +115,8 @@ export function useFormIO({
           const Formio = formioModule.default || formioModule.Formio || formioModule
           
           if (Formio && typeof Formio.createForm === 'function') {
-            // Use Formio.createForm with custom submission handling
-            const form = Formio.createForm(formRef.current!, formSchema, {
+            // Build form options
+            const formOptions: any = {
               readOnly: false,
               noAlerts: false,
               hooks: {
@@ -130,9 +132,15 @@ export function useFormIO({
                   await handleSubmit(cleanData)
                 }
               }
-            })
+            }
+
+            // Use Formio.createForm with custom submission handling
+            const form = await Formio.createForm(formRef.current!, formSchema, formOptions)
             
-            await form.ready
+            // Wait for form to be fully ready if it has a ready promise
+            if (form.ready) {
+              await form.ready
+            }
 
             if (!mounted) {
               form.destroy()
@@ -140,7 +148,117 @@ export function useFormIO({
             }
 
             formInstanceRef.current = form
-            console.log('FormIO form initialized successfully (Formio.createForm)')
+            console.log('FormIO form initialized successfully (Formio.createForm)', {
+              hasData: !!form.data,
+              hasSubmission: !!form.submission,
+              hasSetSubmission: typeof form.setSubmission === 'function',
+              hasRedraw: typeof form.redraw === 'function',
+            })
+
+            // Helper function to set data on DOM inputs directly
+            const setDOMInputValues = (data: Record<string, any>) => {
+              if (!formRef.current || !data) return
+              
+              Object.entries(data).forEach(([key, value]) => {
+                if (value === undefined || value === null) return
+                
+                // Try multiple selector patterns for FormIO inputs
+                const selectors = [
+                  `[name="data[${key}]"]`,
+                  `[name="${key}"]`,
+                  `[data-key="${key}"]`,
+                  `#${key}`,
+                  `[id$="-${key}"]`, // FormIO generates IDs like "abc123-firstName"
+                ]
+                
+                for (const selector of selectors) {
+                  try {
+                    const elements = formRef.current?.querySelectorAll(selector)
+                    if (elements && elements.length > 0) {
+                      elements.forEach((el: Element) => {
+                        const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                        
+                        if (input.type === 'checkbox') {
+                          (input as HTMLInputElement).checked = Boolean(value)
+                        } else if (input.type === 'radio') {
+                          (input as HTMLInputElement).checked = input.value === String(value)
+                        } else {
+                          input.value = String(value)
+                        }
+                        
+                        // Trigger input event for FormIO to pick up the change
+                        input.dispatchEvent(new Event('input', { bubbles: true }))
+                        input.dispatchEvent(new Event('change', { bubbles: true }))
+                        
+                        console.log(`✓ Set DOM value for ${key}:`, value)
+                      })
+                      break // Found and set, move to next key
+                    }
+                  } catch (e) {
+                    // Ignore selector errors
+                  }
+                }
+              })
+            }
+
+            // Helper function to set data on the form
+            const setFormData = async (data: Record<string, any>) => {
+              if (!form || !data) return
+              
+              console.log('Attempting to set form data:', Object.keys(data))
+              
+              // Primary method: Use setSubmission which is the official FormIO way
+              try {
+                if (typeof form.setSubmission === 'function') {
+                  await form.setSubmission({ data: { ...data } }, { noValidate: true })
+                  console.log('✓ Called form.setSubmission()')
+                }
+              } catch (e) {
+                console.log('Could not call setSubmission:', e)
+              }
+              
+              // Also try setting submission directly
+              try {
+                form.submission = { data: { ...data } }
+                console.log('✓ Set form.submission directly')
+              } catch (e) {
+                console.log('Could not set form.submission:', e)
+              }
+              
+              // Try redraw to force UI update
+              try {
+                if (typeof form.redraw === 'function') {
+                  await form.redraw()
+                  console.log('✓ Called form.redraw()')
+                }
+              } catch (e) {
+                console.log('Could not call redraw:', e)
+              }
+              
+              // Final fallback: Set DOM input values directly
+              setDOMInputValues(data)
+            }
+
+            // Set initial data if provided
+            if (initialData && Object.keys(initialData).length > 0) {
+              console.log('Setting initial data for form (Formio.createForm)', formId, 'with', Object.keys(initialData).length, 'fields:', initialData)
+              
+              // Apply after form is fully rendered with increasing delays
+              setTimeout(() => {
+                if (!mounted) return
+                setFormData(initialData)
+              }, 100)
+              
+              setTimeout(() => {
+                if (!mounted) return
+                setFormData(initialData)
+              }, 300)
+              
+              setTimeout(() => {
+                if (!mounted) return
+                setFormData(initialData)
+              }, 600)
+            }
 
             const submitHandler = async (submission: any) => {
               console.log('FormIO submit event fired (Formio.createForm):', submission)
@@ -193,7 +311,8 @@ export function useFormIO({
         }
 
         // Create form instance using Form class with custom submission
-        const form = new FormClass(formRef.current!, formSchema, {
+        // If initialData is provided, pass it during initialization
+        const formOptions: any = {
           readOnly: false,
           noAlerts: false,
           hooks: {
@@ -209,7 +328,14 @@ export function useFormIO({
               await handleSubmit(cleanData)
             }
           }
-        })
+        }
+
+        // If we have initial data, try to pass it during form creation
+        if (initialData && Object.keys(initialData).length > 0) {
+          formOptions.submission = { data: initialData }
+        }
+
+        const form = new FormClass(formRef.current!, formSchema, formOptions)
 
         // Wait for form to be ready
         await form.ready
@@ -221,6 +347,113 @@ export function useFormIO({
 
         formInstanceRef.current = form
         console.log('FormIO form initialized successfully')
+
+        // Helper function to set data on DOM inputs directly
+        const setDOMInputValues = (data: Record<string, any>) => {
+          if (!formRef.current || !data) return
+          
+          Object.entries(data).forEach(([key, value]) => {
+            if (value === undefined || value === null) return
+            
+            // Try multiple selector patterns for FormIO inputs
+            const selectors = [
+              `[name="data[${key}]"]`,
+              `[name="${key}"]`,
+              `[data-key="${key}"]`,
+              `#${key}`,
+              `[id$="-${key}"]`, // FormIO generates IDs like "abc123-firstName"
+            ]
+            
+            for (const selector of selectors) {
+              try {
+                const elements = formRef.current?.querySelectorAll(selector)
+                if (elements && elements.length > 0) {
+                  elements.forEach((el: Element) => {
+                    const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                    
+                    if (input.type === 'checkbox') {
+                      (input as HTMLInputElement).checked = Boolean(value)
+                    } else if (input.type === 'radio') {
+                      (input as HTMLInputElement).checked = input.value === String(value)
+                    } else {
+                      input.value = String(value)
+                    }
+                    
+                    // Trigger input event for FormIO to pick up the change
+                    input.dispatchEvent(new Event('input', { bubbles: true }))
+                    input.dispatchEvent(new Event('change', { bubbles: true }))
+                    
+                    console.log(`✓ Set DOM value for ${key} (FormClass):`, value)
+                  })
+                  break // Found and set, move to next key
+                }
+              } catch (e) {
+                // Ignore selector errors
+              }
+            }
+          })
+        }
+
+        // Helper function to set data on the form
+        const setFormData = async (data: Record<string, any>) => {
+          if (!form || !data) return
+          
+          console.log('Attempting to set form data (FormClass):', Object.keys(data))
+          
+          // Primary method: Use setSubmission which is the official FormIO way
+          try {
+            if (typeof form.setSubmission === 'function') {
+              await form.setSubmission({ data: { ...data } }, { noValidate: true })
+              console.log('✓ Called form.setSubmission() (FormClass)')
+            }
+          } catch (e) {
+            console.log('Could not call setSubmission:', e)
+          }
+          
+          // Also try setting submission directly
+          try {
+            form.submission = { data: { ...data } }
+            console.log('✓ Set form.submission directly (FormClass)')
+          } catch (e) {
+            console.log('Could not set form.submission:', e)
+          }
+          
+          // Try redraw to force UI update
+          try {
+            if (typeof form.redraw === 'function') {
+              await form.redraw()
+              console.log('✓ Called form.redraw() (FormClass)')
+            }
+          } catch (e) {
+            console.log('Could not call redraw:', e)
+          }
+          
+          // Final fallback: Set DOM input values directly
+          setDOMInputValues(data)
+        }
+
+        // Set initial data if provided
+        if (initialData && Object.keys(initialData).length > 0) {
+          console.log('Setting initial data for form', formId, 'with', Object.keys(initialData).length, 'fields:', initialData)
+          
+          // Apply after form is fully rendered with increasing delays
+          setTimeout(() => {
+            if (!mounted) return
+            setFormData(initialData)
+          }, 100)
+          
+          setTimeout(() => {
+            if (!mounted) return
+            setFormData(initialData)
+          }, 300)
+          
+          setTimeout(() => {
+            if (!mounted) return
+            setFormData(initialData)
+          }, 600)
+        } else {
+          console.log('No initial data provided for form', formId)
+        }
 
         // Handle form submission - Use both 'submit' and 'submitDone' events
         const submitHandler = async (submission: any) => {
@@ -283,7 +516,7 @@ export function useFormIO({
         }
       }
     }
-  }, [formSchema, handleSubmit, onError])
+  }, [formSchema, handleSubmit, onError, initialData, formId]) // Added formId to dependencies
 
   return {
     formRef,
