@@ -53,12 +53,14 @@ export async function GET(request: NextRequest) {
     // Get current form and page from metadata
     const currentForm = _metadata?.currentFormId || null
     const currentPage = _metadata?.currentStepIndex !== undefined ? _metadata.currentStepIndex : null
+    const maxStepIndex = _metadata?.maxStepIndex !== undefined ? _metadata.maxStepIndex : currentPage
 
     return NextResponse.json({
       hasSavedState: true,
       recordId: savedRecord.id,
       currentForm: currentForm,
       currentPage: currentPage,
+      maxStepIndex: maxStepIndex,
       data: formData,
       metadata: _metadata || null,
       createdAt: savedRecord.created_at,

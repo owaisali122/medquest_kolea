@@ -51,14 +51,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Store metadata about current form and step for navigation
-    const metadata = {
-      currentFormId: formIdNum,
-      currentStepIndex: stepIndexNum,
-      lastUpdated: new Date().toISOString(),
-      savedAtStep: stepIndexNum,
-    }
-    
     console.log('Saving step metadata:', {
       formId: formIdNum,
       stepIndex: stepIndexNum,
@@ -105,7 +97,14 @@ export async function POST(request: NextRequest) {
         // Merge new data with existing data
         const existingData = existingRows[0].data || {}
         const { _metadata: existingMeta, ...existingFormData } = existingData as any
-        
+        const maxStepIndex = Math.max(existingMeta?.maxStepIndex ?? 0, stepIndexNum)
+        const metadata = {
+          currentFormId: formIdNum,
+          currentStepIndex: stepIndexNum,
+          maxStepIndex,
+          lastUpdated: new Date().toISOString(),
+          savedAtStep: stepIndexNum,
+        }
         const mergedData = {
           ...existingFormData,
           ...cleanData,
@@ -130,6 +129,13 @@ export async function POST(request: NextRequest) {
       } else {
         // Record ID provided but not found - create new
         console.warn('Record ID not found, creating new record')
+        const metadata = {
+          currentFormId: formIdNum,
+          currentStepIndex: stepIndexNum,
+          maxStepIndex: stepIndexNum,
+          lastUpdated: new Date().toISOString(),
+          savedAtStep: stepIndexNum,
+        }
         const newDataWithMetadata = {
           ...cleanData,
           _metadata: metadata,
@@ -148,6 +154,13 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // No record ID - create new record
+      const metadata = {
+        currentFormId: formIdNum,
+        currentStepIndex: stepIndexNum,
+        maxStepIndex: stepIndexNum,
+        lastUpdated: new Date().toISOString(),
+        savedAtStep: stepIndexNum,
+      }
       const newDataWithMetadata = {
         ...cleanData,
         _metadata: metadata,
