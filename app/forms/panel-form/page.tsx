@@ -24,7 +24,7 @@ interface PendingFormsResponse {
   forms: FormStepRecord[]
 }
 
-export default function TabApplicationFormsPage() {
+export default function PanelFormListingPage() {
   const [forms, setForms] = useState<FormStepRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export default function TabApplicationFormsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetch('/api/forms/pending?formSlug=tab-application&allSessions=true')
+        const response = await fetch('/api/forms/pending?formSlug=panel-form&allSessions=true')
         if (!response.ok) throw new Error('Failed to fetch forms')
         const data: PendingFormsResponse = await response.json()
         if (data.success) {
@@ -116,17 +116,17 @@ export default function TabApplicationFormsPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Tab Application Forms</h1>
-            <p className="mt-1 text-gray-600">Saved form steps from the database</p>
+            <h1 className="text-3xl font-bold text-gray-900">Panel Application Forms</h1>
+            <p className="mt-1 text-gray-600">Saved panel form steps from the database</p>
           </div>
           <Link
-            href="/forms/tab-application/new"
+            href="/forms/panel-form/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add New
+            Create New Application
           </Link>
         </div>
 
@@ -140,7 +140,7 @@ export default function TabApplicationFormsPage() {
 
           {forms.length === 0 ? (
             <div className="px-6 py-12 text-center text-gray-500">
-              No form records yet. Click &quot;Add New&quot; to create one.
+              No form records yet. Click &quot;Create New Application&quot; to start.
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -161,7 +161,7 @@ export default function TabApplicationFormsPage() {
                   </div>
                   <div className="col-span-3 flex justify-end gap-2">
                     <Link
-                      href={`/forms/tab-application/${row.id}?currentTab=${row.currentStep}`}
+                      href={`/forms/panel-form/${row.id}/${row.currentStep ?? 1}`}
                       className="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
                     >
                       Edit

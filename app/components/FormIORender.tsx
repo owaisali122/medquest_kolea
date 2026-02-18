@@ -5,6 +5,7 @@ import { FormLoading } from './formio/FormLoading'
 import { FormError } from './formio/FormError'
 import { FormSuccess } from './formio/FormSuccess'
 import { useFormIO } from './formio/hooks/useFormIO'
+import { useEffect } from 'react'
 
 interface FormIORenderProps {
   formSchema: any
@@ -12,6 +13,7 @@ interface FormIORenderProps {
   onSubmitUrl?: string
   submitButtonText?: string
   initialData?: Record<string, any> // Initial form data to populate
+  onFormReady?: (formInstance: any) => void // Callback when form is ready
 }
 
 /**
@@ -24,14 +26,20 @@ export default function FormIORender({
   onSubmitUrl = '/api/forms/submit',
   submitButtonText = 'Submit',
   initialData,
+  onFormReady,
 }: FormIORenderProps) {
-  const { formRef, isLoading, error, isSubmitted, submitMessage } = useFormIO({
+  const { formRef, isLoading, error, isSubmitted, submitMessage, formInstance  } = useFormIO({
     formSchema,
     formId,
     onSubmitUrl,
-    initialData,
+    initialData
   })
 
+  useEffect(() => {
+    if (formInstance && onFormReady) {
+      onFormReady(formInstance)
+    }
+  }, [formInstance])
   // Show error state
   if (error) {
     return <FormError message={error} />
@@ -42,6 +50,8 @@ export default function FormIORender({
     return <FormSuccess message={submitMessage || 'Thank you for your submission!'} />
   }
 
+  
+
   // Show loading or form
   return (
     <>
@@ -50,6 +60,7 @@ export default function FormIORender({
         {isLoading && <FormLoading />}
         <div
           ref={formRef}
+          data-formio-mount
           className={isLoading ? 'hidden' : ''}
           style={{ minHeight: '200px' }}
         />

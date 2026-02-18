@@ -93,7 +93,7 @@ export function Header() {
               </Link>
               
               <Link
-                href="/forms/stepper"
+                href="/forms/tabs"
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200 border border-transparent hover:border-purple-200"
               >
                 <svg 
@@ -109,10 +109,49 @@ export function Header() {
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" 
                   />
                 </svg>
-                tabs
+                Tabs Form
               </Link>
               
+              <Link
+                href="/forms"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200 border border-transparent hover:border-purple-200"
+              >
+                <svg 
+                  className="w-4 h-4" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" 
+                  />
+                </svg>
+                Tab Application
+              </Link>
               
+              <Link
+                href="/forms/panel-form"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200 border border-transparent hover:border-purple-200"
+              >
+                <svg 
+                  className="w-4 h-4" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" 
+                  />
+                </svg>
+                Panel Application
+              </Link>
+
               <Link
                 href="/forms/pending"
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-all duration-200 border border-transparent hover:border-orange-200"
@@ -286,9 +325,9 @@ export function Header() {
               </Link>
               
               <Link
-                href="/forms/stepper"
+                href="/forms/tabs"
                 onClick={closeMobileMenu}
-                className="flex items-center gap-3 px-4 py-3 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200 group"
+                className="flex items-center gap-3 px-4 py-3 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 border border-transparent hover:border-purple-200 group"
               >
                 <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-purple-100 group-hover:bg-purple-200 transition-colors">
                   <svg 
@@ -305,7 +344,7 @@ export function Header() {
                     />
                   </svg>
                 </div>
-                <span>Stepper Form</span>
+                <span>Tabs Form</span>
               </Link>
               
               <Link

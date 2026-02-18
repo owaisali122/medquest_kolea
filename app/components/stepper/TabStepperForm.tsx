@@ -184,7 +184,29 @@ export function TabStepperForm({
         if (radio.checked) {
           extractedData[prefixedName] = radio.value
         }
+      } else if (element.type === 'hidden' && element.classList.contains('searchable-dropdown-hidden-value')) {
+        // Handle searchable dropdown JSON value
+        const value = element.value
+        if (value && value !== '') {
+          try {
+            extractedData[prefixedName] = JSON.parse(value)
+          } catch {
+            extractedData[prefixedName] = value
+          }
+        }
+      } else if (element.type === 'hidden' && element.classList.contains('ssn-masking-hidden-value')) {
+        // Handle SSN masking - use hidden input with raw value (digits only)
+        const value = element.value
+        if (value && value !== '') {
+          extractedData[prefixedName] = value
+        }
       } else if (element.type !== 'file') {
+        // Skip visible inputs that are inside SSN masking wrapper (they show masked display)
+        // The hidden input will be used instead
+        if (element.closest('.ssn-masking-wrapper') && element.type !== 'hidden') {
+          return // Skip this visible input, use hidden input instead
+        }
+        
         const value = element.value
         if (value && value !== '' && value !== 'Select') {
           extractedData[prefixedName] = value

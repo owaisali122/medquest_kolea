@@ -1,3 +1,6 @@
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.0/css/font-awesome.css");
+@import url("https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css");
+
 @import "tailwindcss";
 
 :root {
@@ -69,3 +72,166 @@ header nav {
 header nav a {
   display: flex !important;
 }
+
+/* FormIO custom component icon (for builder) */
+.formio-component-addressSearch .formio-component-label::before {
+  content: "📍 ";
+}
+
+/* Beautiful FormIO Tabs Styling using Tailwind CSS */
+@layer components {
+  .formio-container .nav-tabs {
+    @apply flex flex-wrap border-b-2 border-gray-200 bg-gradient-to-b from-gray-50 to-white relative;
+    @apply -mx-6 mb-8 px-6 pt-3 gap-2;
+  }
+
+  .formio-container .nav-tabs .nav-item {
+    @apply mb-0 relative;
+  }
+
+  .formio-container .nav-tabs .nav-link {
+    @apply border-none border-b-[3px] border-transparent text-gray-500 font-medium text-[0.9375rem];
+    @apply px-6 py-4 m-0 bg-transparent rounded-t-lg transition-all duration-300 ease-out;
+    @apply relative flex items-center gap-2 whitespace-nowrap;
+  }
+
+  .formio-container .nav-tabs .nav-link:hover {
+    @apply text-blue-500 bg-blue-50/50 border-blue-300 -translate-y-0.5;
+  }
+
+  .formio-container .nav-tabs .nav-link.active {
+    @apply text-blue-600 bg-white border-blue-600 font-semibold;
+    @apply shadow-[0_-4px_12px_rgba(37,99,235,0.15),0_2px_4px_rgba(0,0,0,0.05)] -translate-y-0.5;
+  }
+
+  .formio-container .nav-tabs .nav-link.active::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-lg;
+  }
+
+  .formio-container .nav-tabs .nav-link:focus {
+    @apply outline-none ring-2 ring-blue-200;
+  }
+
+  /* Tab Content Area */
+  .formio-container .tab-content {
+    @apply p-0 bg-white rounded-none shadow-none min-h-[300px] mt-0;
+  }
+
+  .formio-container .tab-pane {
+    @apply animate-[fadeIn_0.3s_ease-in-out];
+  }
+
+  /* Tab Panel Styling */
+  .formio-container .panel {
+    @apply border-0 shadow-none mb-0;
+  }
+
+  .formio-container .panel-body {
+    @apply px-6 py-8;
+  }
+
+  /* Ensure tabs are properly contained within form body */
+  .formio-container .formio-form {
+    @apply p-0;
+  }
+
+  .formio-container .formio-form > .formio-form-group {
+    @apply p-0;
+  }
+
+  /* Enhanced FormIO Form Elements within Tabs */
+  .formio-container .tab-content .form-group {
+    @apply mb-6;
+  }
+
+  .formio-container .tab-content .form-control,
+  .formio-container .tab-content input[type="text"],
+  .formio-container .tab-content input[type="email"],
+  .formio-container .tab-content input[type="number"],
+  .formio-container .tab-content textarea,
+  .formio-container .tab-content select {
+    @apply rounded-lg border border-gray-300 px-4 py-3 transition-all duration-200;
+  }
+
+  .formio-container .tab-content .form-control:focus,
+  .formio-container .tab-content input:focus,
+  .formio-container .tab-content textarea:focus,
+  .formio-container .tab-content select:focus {
+    @apply border-blue-600 ring-2 ring-blue-100 outline-none;
+  }
+
+  /* FormIO Select (Choices.js) - ensure selected value displays correctly */
+  .formio-container .choices__list--single .choices__item {
+    @apply block;
+  }
+
+  .formio-container .choices__inner {
+    @apply min-h-[38px];
+  }
+
+  /* Tab Indicator Animation */
+  .formio-container .nav-tabs .nav-link::after {
+    content: '';
+    @apply absolute bottom-[-2px] left-1/2 -translate-x-1/2 scale-x-0 w-4/5 h-[3px];
+    @apply bg-gradient-to-r from-blue-600 to-blue-500 rounded-t transition-transform duration-300 ease-out;
+  }
+
+  .formio-container .nav-tabs .nav-link:hover::after,
+  .formio-container .nav-tabs .nav-link.active::after {
+    @apply scale-x-100;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Mobile Responsive Tabs */
+@layer components {
+  @media (max-width: 768px) {
+    .formio-container .nav-tabs {
+      @apply overflow-x-auto pb-2;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgb(203 213 225) rgb(241 245 249);
+    }
+
+    .formio-container .nav-tabs::-webkit-scrollbar {
+      @apply h-1.5;
+    }
+
+    .formio-container .nav-tabs::-webkit-scrollbar-track {
+      @apply bg-slate-100 rounded;
+    }
+
+    .formio-container .nav-tabs::-webkit-scrollbar-thumb {
+      @apply bg-slate-300 rounded;
+    }
+
+    .formio-container .nav-tabs::-webkit-scrollbar-thumb:hover {
+      @apply bg-slate-400;
+    }
+
+    .formio-container .nav-tabs .nav-link {
+      @apply px-5 py-3.5 text-sm min-w-fit;
+    }
+
+    .formio-container .tab-content {
+      @apply px-6;
+    }
+  }
+}
+
+
+
+

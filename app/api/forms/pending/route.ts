@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dataLayer } from '@/lib/dataLayer'
-import { getFormById } from '@/lib/forms'
+import { getFormById, getFormBySlug } from '@/lib/forms'
 
 /**
  * GET /api/forms/pending
  * Retrieves all pending/incomplete forms
  * Forms are identified by their primary key (id) and can be continued via URL params
+ * 
+ * Query parameters:
+ * - formSlug: Optional. Filter forms by form slug (e.g., 'tabs', 'simple-stepper')
+ * - allSessions: Optional. Return all sessions (default behavior)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const formSlug = searchParams.get('formSlug')
   try {
     // Get all pending forms ordered by most recently updated
     const result = await dataLayer('submissions', 'form_step_saves', 'read', {
@@ -28,6 +34,19 @@ export async function GET() {
 
     const rows = result.rows || []
 
+    // Get target form ID if formSlug is provided
+    let targetFormId: number | null = null
+    if (formSlug) {
+      try {
+        const targetForm = await getFormBySlug(formSlug)
+        if (targetForm) {
+          targetFormId = targetForm.id
+        }
+      } catch (e) {
+        console.error(`Error fetching form by slug ${formSlug}:`, e)
+      }
+    }
+
     // Enrich with form details and extract metadata
     const pendingForms = await Promise.all(
       rows.map(async (row: any) => {
@@ -38,6 +57,11 @@ export async function GET() {
           // Get form ID from metadata
           const formId = _metadata?.currentFormId || 8
           const stepIndex = _metadata?.currentStepIndex ?? 0
+
+          // Filter by formSlug if provided
+          if (targetFormId !== null && formId !== targetFormId) {
+            return null
+          }
 
           let form = null
           if (formId) {
@@ -82,10 +106,13 @@ export async function GET() {
       })
     )
 
+    // Filter out null values (from formSlug filtering)
+    const filteredForms = pendingForms.filter((form): form is NonNullable<typeof form> => form !== null)
+
     return NextResponse.json({
       success: true,
-      count: pendingForms.length,
-      forms: pendingForms,
+      count: filteredForms.length,
+      forms: filteredForms,
     })
   } catch (error: any) {
     console.error('Get pending forms error:', error)

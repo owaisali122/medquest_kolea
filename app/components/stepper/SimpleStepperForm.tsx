@@ -95,6 +95,8 @@ export function SimpleStepperForm({
           if (state.hasSavedState) {
             // Set form data from response
             if (state.data && Object.keys(state.data).length > 0) {
+              console.log('SimpleStepperForm: Loading data from API into Redux:', state.data)
+              console.log('SimpleStepperForm: searchableDropdown value:', state.data.step0_form8_searchableDropdown)
               dispatch(setFormData(state.data))
               // Increment key to force FormIO remount with loaded data
               setDataLoadedKey(prev => prev + 1)
@@ -192,7 +194,29 @@ export function SimpleStepperForm({
         if (radio.checked) {
           extractedData[prefixedName] = radio.value
         }
+      } else if (element.type === 'hidden' && element.classList.contains('searchable-dropdown-hidden-value')) {
+        // Handle searchable dropdown JSON value
+        const value = element.value
+        if (value && value !== '') {
+          try {
+            extractedData[prefixedName] = JSON.parse(value)
+          } catch {
+            extractedData[prefixedName] = value
+          }
+        }
+      } else if (element.type === 'hidden' && element.classList.contains('ssn-masking-hidden-value')) {
+        // Handle SSN masking - use hidden input with raw value (digits only)
+        const value = element.value
+        if (value && value !== '') {
+          extractedData[prefixedName] = value
+        }
       } else if (element.type !== 'file') {
+        // Skip visible inputs that are inside SSN masking wrapper (they show masked display)
+        // The hidden input will be used instead
+        if (element.closest('.ssn-masking-wrapper') && element.type !== 'hidden') {
+          return // Skip this visible input, use hidden input instead
+        }
+        
         const value = element.value
         if (value && value !== '' && value !== 'Select') {
           extractedData[prefixedName] = value
@@ -210,6 +234,9 @@ export function SimpleStepperForm({
     const prefix = getFieldPrefix(currentStep, currentStepData.form.id)
     const dataForStep: Record<string, any> = {}
     
+    console.log('getInitialDataForCurrentStep: formData keys:', Object.keys(formData))
+    console.log('getInitialDataForCurrentStep: looking for prefix:', prefix)
+    
     // Filter and transform data for current step
     Object.entries(formData).forEach(([key, value]) => {
       if (key.startsWith(prefix)) {
@@ -218,6 +245,9 @@ export function SimpleStepperForm({
         dataForStep[originalFieldName] = value
       }
     })
+    
+    console.log('getInitialDataForCurrentStep: dataForStep:', dataForStep)
+    console.log('getInitialDataForCurrentStep: searchableDropdown:', dataForStep.searchableDropdown)
     
     return dataForStep
   }, [formData, currentStep, currentStepData.form, getFieldPrefix])

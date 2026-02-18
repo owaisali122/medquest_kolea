@@ -8,5 +8,5 @@ interface FormBodyProps {
  * Form body component for form content
  */
 export function FormBody({ children }: FormBodyProps) {
-  return <div className="px-6 py-8">{children}</div>
+  return <div className="px-6 py-8 bg-white">{children}</div>
 }

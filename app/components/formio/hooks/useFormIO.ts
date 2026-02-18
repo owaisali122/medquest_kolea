@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { registerCustomComponents } from '../custom-components'
 
 interface UseFormIOOptions {
   formSchema: any
@@ -17,6 +18,7 @@ interface UseFormIOReturn {
   error: string | null
   isSubmitted: boolean
   submitMessage: string | null
+  formInstance: any
 }
 
 /**
@@ -37,6 +39,7 @@ export function useFormIO({
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
+  console.log("Form initializing...")
   const handleSubmit = useCallback(
     async (submissionData: any) => {
       try {
@@ -95,6 +98,9 @@ export function useFormIO({
           throw new Error('FormIO can only be loaded in browser environment')
         }
 
+        // Register custom components BEFORE importing FormIO forms
+        await registerCustomComponents()
+
         // Dynamically import FormIO - use Form class directly (more reliable)
         const formioModule: any = await import('formiojs')
         
@@ -148,6 +154,7 @@ export function useFormIO({
             }
 
             formInstanceRef.current = form
+            if (formRef.current) (formRef.current as any).formio = form
             console.log('FormIO form initialized successfully (Formio.createForm)', {
               hasData: !!form.data,
               hasSubmission: !!form.submission,
@@ -346,6 +353,7 @@ export function useFormIO({
         }
 
         formInstanceRef.current = form
+        if (formRef.current) (formRef.current as any).formio = form
         console.log('FormIO form initialized successfully')
 
         // Helper function to set data on DOM inputs directly
@@ -354,6 +362,70 @@ export function useFormIO({
           
           Object.entries(data).forEach(([key, value]) => {
             if (value === undefined || value === null) return
+            
+            // Special handling for searchable dropdown - find the component and call setValue
+            // This works with the react-select based component
+            if (form) {
+              // Try getComponent method
+              if (form.getComponent) {
+                try {
+                  const component = form.getComponent(key)
+                  if (component && component.component?.type === 'searchableDropdown') {
+                    console.log(`Setting searchableDropdown ${key} value via getComponent:`, value)
+                    component.setValue(value)
+                    return
+                  }
+                } catch (e) {
+                  console.log(`getComponent failed for ${key}:`, e)
+                }
+              }
+              
+              // Try iterating through all components
+              if (form.everyComponent) {
+                let found = false
+                form.everyComponent((comp: any) => {
+                  if (comp.component?.key === key && comp.component?.type === 'searchableDropdown') {
+                    console.log(`Setting searchableDropdown ${key} value via everyComponent:`, value)
+                    comp.setValue(value)
+                    found = true
+                  }
+                })
+                if (found) return
+              }
+              
+              // Try components map directly
+              if (form.components) {
+                const findAndSet = (components: any[]): boolean => {
+                  for (const comp of components) {
+                    if (comp.component?.key === key && comp.component?.type === 'searchableDropdown') {
+                      console.log(`Setting searchableDropdown ${key} value via components array:`, value)
+                      comp.setValue(value)
+                      return true
+                    }
+                    // Check nested components
+                    if (comp.components && Array.isArray(comp.components)) {
+                      if (findAndSet(comp.components)) return true
+                    }
+                  }
+                  return false
+                }
+                if (findAndSet(form.components)) return
+              }
+            }
+            
+            // Also try to find ALL hidden inputs for searchable dropdown and set them
+            const searchableDropdownHiddens = formRef.current?.querySelectorAll(
+              `input.searchable-dropdown-hidden-value[name="${key}"]`
+            )
+            
+            if (searchableDropdownHiddens && searchableDropdownHiddens.length > 0) {
+              searchableDropdownHiddens.forEach((input) => {
+                (input as HTMLInputElement).value = JSON.stringify(value)
+              })
+              console.log(`✓ Set ${searchableDropdownHiddens.length} searchable dropdown hidden input(s) for ${key}:`, value)
+              // RETURN here to prevent the generic DOM setter from overwriting with non-JSON value
+              return
+            }
             
             // Try multiple selector patterns for FormIO inputs
             const selectors = [
@@ -508,6 +580,7 @@ export function useFormIO({
 
     return () => {
       mounted = false
+      if (formRef.current) delete (formRef.current as any).formio
       if (formInstanceRef.current) {
         try {
           formInstanceRef.current.destroy()
@@ -516,7 +589,7 @@ export function useFormIO({
         }
       }
     }
-  }, [formSchema, handleSubmit, onError, initialData, formId]) // Added formId to dependencies
+  }, [formSchema, handleSubmit, onError, formId]) // Added formId to dependencies
 
   return {
     formRef,
@@ -524,5 +597,6 @@ export function useFormIO({
     error,
     isSubmitted,
     submitMessage,
+    formInstance: formInstanceRef.current
   }
 }
