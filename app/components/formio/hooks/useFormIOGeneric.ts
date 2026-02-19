@@ -119,17 +119,17 @@ export function useFormIOGeneric({
 
         const schema = JSON.parse(JSON.stringify(formSchema))
         schema.settings = { ...(schema.settings || {}), wizardHeaderType: 'Vertical' }
-        const hideButtons = { showPrevious: false, showNext: false, showCancel: false, showSubmit: false }
+        const hidePanelButtons = { previous: false, next: false, cancel: false, submit: false }
         const setPanelButtons = (comps: any[]) => {
           ;(comps || []).forEach((c: any) => {
-            if (c.type === 'panel') c.buttonSettings = { ...(c.buttonSettings || {}), ...hideButtons }
+            if (c.type === 'panel') c.buttonSettings = { ...(c.buttonSettings || {}), ...hidePanelButtons }
             if (c.components?.length) setPanelButtons(c.components)
           })
         }
         setPanelButtons(schema.components || [])
 
         const formOptions: any = {
-          buttonSettings: hideButtons,
+          buttonSettings: { showPrevious: false, showNext: false, showCancel: false, showSubmit: false },
           readOnly: false,
           noAlerts: true,
           allowPrevious: true,
