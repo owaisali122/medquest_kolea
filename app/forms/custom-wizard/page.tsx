@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-const FORM_SLUG = 'custom-review-information'
+const FORM_SLUG = 'custom-application-details'
 
 interface FormStepRecord {
   id: number

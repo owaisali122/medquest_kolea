@@ -41,7 +41,9 @@ export function createSSNMaskingClass(TextFieldComponent: any) {
 
     constructor(component: any, options: any, data: any) {
       super(component, options, data)
-      
+      // Skip FormIO's built-in inputMask validation; this component uses its own masking/formatting
+      this.skipMaskValidation = true
+
       // Load initial value from data
       const key = component.key
       if (data && key && data[key]) {
@@ -402,6 +404,31 @@ export function createSSNMaskingClass(TextFieldComponent: any) {
       }
       
       return super.setValue(this.rawValue, flags)
+    }
+
+    // Value used by FormIO validators. When the form has inputMask/displayMask (e.g. 999-99-9999)
+    // or pattern/length expecting XXX-XX-XXXX, return formatted value so validation passes.
+    // We still store and submit raw digits via dataValue/getValue.
+    get validationValue() {
+      const raw = this.rawValue || ''
+      if (raw.length !== 9) return raw
+      const comp = this.component || {}
+      const inputMask = String(comp.inputMask || '')
+      const displayMask = String(comp.displayMask || '')
+      const hasSSNMask = /9{2,3}[-\s]*9{2}[-\s]*9{4}/.test(inputMask) || /9{2,3}[-\s]*9{2}[-\s]*9{4}/.test(displayMask) ||
+        inputMask === '999-99-9999' || displayMask === '999-99-9999'
+      const validate = comp.validate || {}
+      const pattern = String(validate.pattern || '')
+      const minLen = parseInt(validate.minLength, 10)
+      const maxLen = parseInt(validate.maxLength, 10)
+      const expectsFormattedLength = minLen === 11 || maxLen === 11
+      const looksLikeSSNPattern = pattern.length > 0 &&
+        pattern.includes('{3}') && pattern.includes('{2}') && pattern.includes('{4}') &&
+        (pattern.includes('-') || /[d0-9\\\[\]]/.test(pattern))
+      if (hasSSNMask || looksLikeSSNPattern || expectsFormattedLength) {
+        return this.formatSSN(raw)
+      }
+      return raw
     }
 
     // Get the value for submission - ALWAYS return raw value (digits only), never masked display
