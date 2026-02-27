@@ -139,16 +139,17 @@ export function useFormIOGeneric({
         if (initialData && Object.keys(initialData).length > 0) {
           formOptions.submission = { data: initialData }
         }
+        // So fieldReference/appDetailRef can resolve referenceKey during attach()
+        formOptions.form = schema
 
         const form = await Formio.createForm(formRef.current!, schema, formOptions)
-
+        ;(form as any)._formSchema = schema
         if (form.ready) await form.ready
 
         if (!mounted) {
           form.destroy()
           return
         }
-
         formInstanceRef.current = form
         if (formRef.current) (formRef.current as any).formio = form
 

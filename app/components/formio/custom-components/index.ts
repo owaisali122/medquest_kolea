@@ -7,6 +7,8 @@ import { createSearchableDropdownClass } from './SearchableDropdownFormIO'
 import { createSSNMaskingClass } from './SSNMaskingFormIO'
 import { createTabNavigationButtonsClass } from './TabNavigationButtonsFormIO'
 import { createTabProgressClass } from './TabProgressFormIO'
+import { createFieldReferenceClass } from './FieldReferenceFormIO'
+import { createAppDetailRefClass } from './AppDetailRefFormIO'
 
 let componentsRegistered = false
 
@@ -504,6 +506,26 @@ export async function registerCustomComponents(): Promise<void> {
     } else {
       Formio.Components.components.tabprogress = TabProgress
       console.log('TabProgress registered via direct assignment')
+    }
+
+    // FIELD REFERENCE COMPONENT (resolves referenceKey to same-form field)
+    const FieldReference = createFieldReferenceClass(FieldComponent)
+    if (typeof Formio.Components.setComponent === 'function') {
+      Formio.Components.setComponent('fieldReference', FieldReference)
+    } else if (Formio.Components.addComponent) {
+      Formio.Components.addComponent('fieldReference', FieldReference)
+    } else {
+      Formio.Components.components.fieldReference = FieldReference
+    }
+
+    // APP DETAIL REF COMPONENT (embeds another form by selectedFormId)
+    const AppDetailRef = createAppDetailRefClass(FieldComponent)
+    if (typeof Formio.Components.setComponent === 'function') {
+      Formio.Components.setComponent('appDetailRef', AppDetailRef)
+    } else if (Formio.Components.addComponent) {
+      Formio.Components.addComponent('appDetailRef', AppDetailRef)
+    } else {
+      Formio.Components.components.appDetailRef = AppDetailRef
     }
 
     console.log('Custom components registration complete. Available components:', Object.keys(Formio.Components.components))
