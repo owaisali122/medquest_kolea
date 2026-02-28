@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { Wizard, useWizard } from 'react-use-wizard'
-import FormIORenderWizard from '@/app/components/formio/FormIORenderWizard'
+import FormIORenderWizardLegacy from './FormIORenderWizardLegacy'
 
 export interface WizardStepForm {
   id: number
@@ -80,7 +80,7 @@ function WizardStep({
               `,
             }}
           />
-          <FormIORenderWizard
+          <FormIORenderWizardLegacy
             key={stepKey}
             formSchema={stepConfig.form.schema}
             formId={stepConfig.form.id}

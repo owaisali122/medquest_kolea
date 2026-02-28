@@ -53,7 +53,7 @@ export function Header() {
               </Link>
               
               <Link
-                href="/forms/user-registration"
+                href="/forms/user-registration/list"
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200"
               >
                 <svg 

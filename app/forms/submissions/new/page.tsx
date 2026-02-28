@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import FormIORenderGenericWithSlug from '@/app/components/formio/FormIORenderGenericWithSlug'
+import FormIORenderWizardWithSlug from '@/app/components/formio/FormIORenderWizardWithSlug'
 
 export default function NewFormSubmissionPage() {
   const searchParams = useSearchParams()
@@ -111,7 +111,7 @@ export default function NewFormSubmissionPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Add New</h1>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <FormIORenderGenericWithSlug
+          <FormIORenderWizardWithSlug
             slug={slug}
             onSuccess={handleSuccess}
             onError={(e) => console.error(e)}

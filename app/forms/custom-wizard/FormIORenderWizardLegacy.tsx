@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { registerCustomComponents } from '../custom-components'
+import { FormIOCSSLoader } from '@/app/components/formio/FormIOCSSLoader'
+import { FormLoading } from '@/app/components/formio/FormLoading'
+import { FormError } from '@/app/components/formio/FormError'
+import { registerCustomComponents } from '@/app/components/formio/custom-components'
 
-interface UseFormIOWizardOptions {
+interface Props {
   formSchema: any
   formId: number
   initialData?: Record<string, any>
@@ -11,20 +14,13 @@ interface UseFormIOWizardOptions {
   onValidSubmit: (data: Record<string, any>) => void | Promise<void>
 }
 
-interface UseFormIOWizardReturn {
-  formRef: React.RefObject<HTMLDivElement | null>
-  isLoading: boolean
-  error: string | null
-  formInstance: any
-}
-
-export function useFormIOWizard({
+export default function FormIORenderWizardLegacy({
   formSchema,
   formId,
   initialData,
   onFormReady,
   onValidSubmit,
-}: UseFormIOWizardOptions): UseFormIOWizardReturn {
+}: Props) {
   const formRef = useRef<HTMLDivElement>(null)
   const formInstanceRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -40,12 +36,8 @@ export function useFormIOWizard({
         setIsLoading(false)
         return
       }
-
       try {
-        if (typeof window === 'undefined') {
-          throw new Error('FormIO can only be loaded in browser environment')
-        }
-
+        if (typeof window === 'undefined') throw new Error('FormIO can only be loaded in browser environment')
         await registerCustomComponents()
 
         const formioModule: any = await import('formiojs')
@@ -54,20 +46,12 @@ export function useFormIOWizard({
           formioModule.default?.Form ||
           (typeof formioModule.default === 'function' ? formioModule.default : null)
 
-        if (!FormClass) {
-          throw new Error('Could not find Form in formiojs module')
-        }
+        if (!FormClass) throw new Error('Could not find Form in formiojs module')
 
         if (formInstanceRef.current) {
-          try {
-            formInstanceRef.current.destroy()
-          } catch (e) {
-            // ignore
-          }
+          try { formInstanceRef.current.destroy() } catch { /* ignore */ }
         }
-        if (formRef.current) {
-          formRef.current.innerHTML = ''
-        }
+        if (formRef.current) formRef.current.innerHTML = ''
 
         const formOptions: any = {
           readOnly: false,
@@ -106,20 +90,14 @@ export function useFormIOWizard({
         }
 
         if (initialData && typeof initialData === 'object' && Object.keys(initialData).length > 0) {
-          try {
-            instance.submission = { data: initialData }
-          } catch (e) {
-            // ignore
-          }
+          try { instance.submission = { data: initialData } } catch { /* ignore */ }
         }
 
         formInstanceRef.current = instance
         if (formRef.current) (formRef.current as any).formio = instance
         onFormReady?.(instance)
       } catch (err: any) {
-        if (mounted) {
-          setError(err?.message || 'Failed to load form')
-        }
+        if (mounted) setError(err?.message || 'Failed to load form')
       } finally {
         if (mounted) setIsLoading(false)
       }
@@ -129,20 +107,21 @@ export function useFormIOWizard({
     return () => {
       mounted = false
       if (formInstanceRef.current) {
-        try {
-          formInstanceRef.current.destroy()
-        } catch (e) {
-          // ignore
-        }
+        try { formInstanceRef.current.destroy() } catch { /* ignore */ }
         formInstanceRef.current = null
       }
     }
   }, [formSchema, formId])
 
-  return {
-    formRef,
-    isLoading,
-    error,
-    formInstance: formInstanceRef.current,
-  }
+  if (error) return <FormError message={error} />
+
+  return (
+    <>
+      <FormIOCSSLoader />
+      <div className="formio-container">
+        {isLoading && <FormLoading />}
+        <div ref={formRef} data-formio-mount className={isLoading ? 'hidden' : ''} style={{ minHeight: '200px' }} />
+      </div>
+    </>
+  )
 }

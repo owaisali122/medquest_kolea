@@ -58,7 +58,7 @@ function findComponentByKey(comp: any, key: string): any {
  * Get the form-level schema by walking up to the topmost component.
  * In wizard forms, this.root may be the current page (panel), not the form,
  * so we need the form root to resolve references to fields on other pages.
- * Also checks for _formSchema attached by useFormIOGeneric (reliable source).
+ * Also checks for _formSchema attached by useFormIOCore (reliable source).
  */
 function getFormSchema(instance: any): any {
   let current: any = instance

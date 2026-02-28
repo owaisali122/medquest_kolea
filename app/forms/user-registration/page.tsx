@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import { getFormBySlug } from '@/lib/forms'
-import FormIORender from '@/app/components/FormIORender'
 import { FormContainer } from '@/app/components/forms/FormContainer'
 import { FormHeader } from '@/app/components/forms/FormHeader'
 import { FormBody } from '@/app/components/forms/FormBody'
+import UserRegistrationForm from './UserRegistrationForm'
 
 export async function generateMetadata() {
   const form = await getFormBySlug('user-registration')
@@ -25,11 +25,7 @@ export default async function UserRegistrationPage() {
     <FormContainer>
       <FormHeader title={form.title} description={form.description} />
       <FormBody>
-        <FormIORender
-          formSchema={form.schema}
-          formId={form.id}
-          submitButtonText={form.settings?.submitButtonText || 'Submit'}
-        />
+        <UserRegistrationForm />
       </FormBody>
     </FormContainer>
   )

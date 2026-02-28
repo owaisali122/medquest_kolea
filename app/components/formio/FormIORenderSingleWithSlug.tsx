@@ -1,41 +1,34 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import FormIORenderGeneric from './FormIORenderGeneric'
+import FormIORenderSingle from './FormIORenderSingle'
 import { FormLoading } from './FormLoading'
 import { FormError } from './FormError'
 
-interface FormIORenderGenericWithSlugProps {
+interface FormIORenderSingleWithSlugProps {
   slug: string
-  recordId?: number | null
   initialData?: Record<string, any>
-  initialPage?: number
-  maxFilledStep?: number
-  onSuccess?: () => void
+  onSubmit?: (data: Record<string, any>, formInstanceRef: React.MutableRefObject<any>) => void | Promise<void>
   onError?: (error: string) => void
-  onPrevious?: (state: any) => void | Promise<void>
-  onNext?: (state: any) => void | Promise<void>
-  onSaveExit?: (state: any) => void | Promise<void>
+  submitButton: React.ReactElement
+  cancelButton?: React.ReactElement
+  onCancel?: () => void
 }
 
-export default function FormIORenderGenericWithSlug({
+export default function FormIORenderSingleWithSlug({
   slug,
-  recordId = null,
   initialData,
-  initialPage,
-  maxFilledStep,
-  onSuccess,
+  onSubmit,
   onError,
-  onPrevious,
-  onNext,
-  onSaveExit,
-}: FormIORenderGenericWithSlugProps) {
+  submitButton,
+  cancelButton,
+  onCancel,
+}: FormIORenderSingleWithSlugProps) {
   const [form, setForm] = useState<{ id: number; schema: any } | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!slug) return
-
     const load = async () => {
       try {
         setLoadError(null)
@@ -50,7 +43,6 @@ export default function FormIORenderGenericWithSlug({
         setLoadError(err.message || 'Failed to load form')
       }
     }
-
     load()
   }, [slug])
 
@@ -58,18 +50,15 @@ export default function FormIORenderGenericWithSlug({
   if (!form) return <FormLoading />
 
   return (
-    <FormIORenderGeneric
+    <FormIORenderSingle
       formSchema={form.schema}
       formId={form.id}
-      recordId={recordId}
       initialData={initialData}
-      initialPage={initialPage}
-      maxFilledStep={maxFilledStep}
-      onSuccess={onSuccess}
+      onSubmit={onSubmit}
       onError={onError}
-      onPrevious={onPrevious}
-      onNext={onNext}
-      onSaveExit={onSaveExit}
+      submitButton={submitButton}
+      cancelButton={cancelButton}
+      onCancel={onCancel}
     />
   )
 }
