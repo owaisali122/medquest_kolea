@@ -194,7 +194,8 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       this.currentValue = newValue
       const key = this.component.key
       if (this.data && key) this.data[key] = newValue
-      if (this.root?.data && key) this.root.data[key] = newValue
+      // Only write to root when at root level (not inside editgrid/datagrid row)
+      if (this.root?.data && key && this.data === this.root.data) this.root.data[key] = newValue
       this.triggerChange()
     }
 

@@ -346,7 +346,8 @@ export function createSSNMaskingClass(TextFieldComponent: any) {
       if (this.data && key) {
         this.data[key] = valueToStore
       }
-      if (this.root?.data && key) {
+      // Only write to root when at root level (not inside editgrid/datagrid row)
+      if (this.root?.data && key && this.data === this.root.data) {
         this.root.data[key] = valueToStore
       }
       

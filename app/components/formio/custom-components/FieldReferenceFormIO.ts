@@ -139,7 +139,8 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const key = this.component?.key
       if (!key) return
       if (this.data) this.data[key] = value
-      if (this.root?.data) this.root.data[key] = value
+      // Only write to root when at root level (not inside editgrid/datagrid row)
+      if (this.root?.data && this.data === this.root.data) this.root.data[key] = value
       this.triggerChange()
     }
 
@@ -151,7 +152,8 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const key = this.component?.key
       if (!key) return
       if (this.data) this.data[key] = value
-      if (this.root?.data) this.root.data[key] = value
+      // Only write to root when at root level (not inside editgrid/datagrid row)
+      if (this.root?.data && this.data === this.root.data) this.root.data[key] = value
       if (this.childComponent && this.childComponent.setValue) {
         this.childComponent.setValue(value, flags)
       }
