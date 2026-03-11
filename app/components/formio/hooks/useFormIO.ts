@@ -98,11 +98,10 @@ export function useFormIO({
           throw new Error('FormIO can only be loaded in browser environment')
         }
 
-        // Register custom components BEFORE importing FormIO forms
-        await registerCustomComponents()
-
-        // Dynamically import FormIO - use Form class directly (more reliable)
         const formioModule: any = await import('formiojs')
+        await registerCustomComponents(
+          (formioModule as any).Formio || (formioModule as any).default?.Formio || (formioModule as any).default
+        )
         
         // Get Form class - try different import patterns
         let FormClass: any = null

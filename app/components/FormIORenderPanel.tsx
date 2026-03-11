@@ -26,8 +26,8 @@ export default function FormIORenderPanel({
     let isMounted = true
 
     const init = async () => {
-      await registerCustomComponents()
       const { Formio } = await import('formiojs')
+      await registerCustomComponents(Formio)
       if (formRef.current) formRef.current.innerHTML = ''
       const instance = await Formio.createForm(formRef.current!, formSchema, {
         renderMode: 'form',

@@ -11,7 +11,6 @@
  * Schema: type: 'fieldReference', key, label, referenceKey (required)
  */
 
-/** Cache: formSchema -> (refKey -> resolved component schema). Avoids re-walking the tree for same form + key. */
 const resolutionCache = new WeakMap<object, Map<string, any>>()
 
 function getCachedOrFind(schema: object, key: string): any {
@@ -30,23 +29,33 @@ function getCachedOrFind(schema: object, key: string): any {
 
 /**
  * Recursively find a component by key in the schema tree.
- * Supports: components, columns[].components, rows[][].components, tabs[].components, pages[].components (wizard).
+ * Supports: components, columns[].components, rows[][].components,
+ *   tabs[].components, pages[].components (wizard).
  */
 function findComponentByKey(comp: any, key: string): any {
   if (!comp) return null
   if (comp.key === key) return comp
   const children: any[] = []
   if (Array.isArray(comp.components)) children.push(...comp.components)
-  if (Array.isArray(comp.columns)) comp.columns.forEach((col: any) => { if (col.components) children.push(...col.components) })
-  if (Array.isArray(comp.rows)) comp.rows.forEach((row: any) => {
-    if (Array.isArray(row)) row.forEach((cell: any) => {
-      if (cell?.components) children.push(...cell.components)
-      else if (cell && (cell.key != null || cell.type)) children.push(cell)
+  if (Array.isArray(comp.columns)) {
+    comp.columns.forEach((col: any) => { if (col.components) children.push(...col.components) })
+  }
+  if (Array.isArray(comp.rows)) {
+    comp.rows.forEach((row: any) => {
+      if (Array.isArray(row)) {
+        row.forEach((cell: any) => {
+          if (cell?.components) children.push(...cell.components)
+          else if (cell && (cell.key != null || cell.type)) children.push(cell)
+        })
+      } else if (row?.components) children.push(...row.components)
     })
-    else if (row?.components) children.push(...row.components)
-  })
-  if (Array.isArray(comp.tabs)) comp.tabs.forEach((tab: any) => { if (tab?.components) children.push(...tab.components) })
-  if (Array.isArray(comp.pages)) comp.pages.forEach((pg: any) => { if (pg?.components) children.push(...pg.components) })
+  }
+  if (Array.isArray(comp.tabs)) {
+    comp.tabs.forEach((tab: any) => { if (tab?.components) children.push(...tab.components) })
+  }
+  if (Array.isArray(comp.pages)) {
+    comp.pages.forEach((pg: any) => { if (pg?.components) children.push(...pg.components) })
+  }
   for (const c of children) {
     const found = findComponentByKey(c, key)
     if (found) return found
@@ -55,17 +64,17 @@ function findComponentByKey(comp: any, key: string): any {
 }
 
 /**
- * Get the form-level schema by walking up to the topmost component.
- * In wizard forms, this.root may be the current page (panel), not the form,
+ * Walk up the component tree to find the form-level schema.
+ * In wizard forms this.root may be the current page (panel), not the form,
  * so we need the form root to resolve references to fields on other pages.
- * Also checks for _formSchema attached by useFormIOCore (reliable source).
+ * Also checks for _formSchema attached by useFormIOCore.
  */
 function getFormSchema(instance: any): any {
   let current: any = instance
   let formSchema: any = null
   while (current) {
-    if ((current as any)._formSchema && ((current as any)._formSchema.components || (current as any)._formSchema.pages)) {
-      return (current as any)._formSchema
+    if (current._formSchema && (current._formSchema.components || current._formSchema.pages)) {
+      return current._formSchema
     }
     if (current.component && (current.component.components || current.component.pages)) {
       formSchema = current.component
@@ -74,13 +83,6 @@ function getFormSchema(instance: any): any {
     current = current.parent
   }
   return formSchema
-}
-
-let formioGlobal: any = null
-function getFormio(): any {
-  if (formioGlobal) return formioGlobal
-  if (typeof window !== 'undefined') formioGlobal = (window as any).Formio
-  return formioGlobal
 }
 
 export function createFieldReferenceClass(FieldComponent: any) {
@@ -120,13 +122,14 @@ export function createFieldReferenceClass(FieldComponent: any) {
     }
 
     get referenceKey(): string {
-      return (
-        this.component?.referenceKey ||
-        this.component?.refKey ||
-        this.component?.referencedKey ||
-        ''
-      )
+      return this.component?.referenceKey || this.component?.refKey || this.component?.referencedKey || ''
     }
+
+    private getFormio(): any {
+      return typeof window !== 'undefined' ? (window as any).Formio ?? null : null
+    }
+
+    // --- Data binding (guards against editgrid/datagrid row duplication) ---
 
     get dataValue() {
       const key = this.component?.key
@@ -139,7 +142,6 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const key = this.component?.key
       if (!key) return
       if (this.data) this.data[key] = value
-      // Only write to root when at root level (not inside editgrid/datagrid row)
       if (this.root?.data && this.data === this.root.data) this.root.data[key] = value
       this.triggerChange()
     }
@@ -152,16 +154,15 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const key = this.component?.key
       if (!key) return
       if (this.data) this.data[key] = value
-      // Only write to root when at root level (not inside editgrid/datagrid row)
       if (this.root?.data && this.data === this.root.data) this.root.data[key] = value
-      if (this.childComponent && this.childComponent.setValue) {
-        this.childComponent.setValue(value, flags)
-      }
+      if (this.childComponent?.setValue) this.childComponent.setValue(value, flags)
       return super.setValue(value, flags)
     }
 
+    // --- Validation ---
+
     checkValidity(data: any, dirty?: boolean, row?: any, silentCheck?: boolean) {
-      if (this.childComponent && this.childComponent.checkValidity) {
+      if (this.childComponent?.checkValidity) {
         const isValid = this.childComponent.checkValidity(data, dirty, row, silentCheck)
         this.error = this.childComponent.error ?? null
         if (!isValid && this.childComponent.error) {
@@ -196,13 +197,9 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const root = (this as any).element ?? container.closest('.form-group') ?? container.parentElement
       if (!root) return
       const selectors = [
-        '.invalid-feedback',
-        '.help-block',
-        '.error-block',
-        '[class*="error-message"]',
-        '[class*="invalid-feedback"]',
-        '[class*="error-block"]',
-        '[role="alert"]',
+        '.invalid-feedback', '.help-block', '.error-block',
+        '[class*="error-message"]', '[class*="invalid-feedback"]',
+        '[class*="error-block"]', '[role="alert"]',
       ]
       selectors.forEach((sel) => {
         try {
@@ -215,6 +212,8 @@ export function createFieldReferenceClass(FieldComponent: any) {
       })
     }
 
+    // --- Render / Attach ---
+
     render() {
       return super.render(`
         <div class="field-reference-container" ref="container">
@@ -224,13 +223,12 @@ export function createFieldReferenceClass(FieldComponent: any) {
       `)
     }
 
-    /** Resolve form schema from root, options, or parent walk. */
     private getFormSchemaForRef(): any {
       const root = this.root || (this as any).form
       const optionsForm = (this as any).options?.form
       const hasFullSchema = (s: any) => s && (Array.isArray(s?.components) || Array.isArray(s?.pages))
       let formSchema: any =
-        (root && (root as any)._formSchema && hasFullSchema((root as any)._formSchema) && (root as any)._formSchema) ||
+        (root?._formSchema && hasFullSchema(root._formSchema) && root._formSchema) ||
         (hasFullSchema(optionsForm) && optionsForm) ||
         getFormSchema(this) ||
         root?.component ||
@@ -248,7 +246,6 @@ export function createFieldReferenceClass(FieldComponent: any) {
       return formSchema
     }
 
-    /** Build and attach the referenced field child. Returns true if successful. */
     private tryAttachChild(): boolean {
       const refKey = this.referenceKey
       if (!refKey) return false
@@ -261,7 +258,7 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const placeholder = this.refs?.placeholder as HTMLElement | undefined
       if (!container || !placeholder) return false
 
-      const Formio = getFormio()
+      const Formio = this.getFormio()
       if (!Formio?.Components?.create) return false
 
       const refType = (this.refSchema.type || 'textfield').toLowerCase()
@@ -285,9 +282,7 @@ export function createFieldReferenceClass(FieldComponent: any) {
       child.build(childContainer)
       container.replaceChild(childContainer, placeholder)
       this.childComponent = child
-      if (typeof child.attach === 'function') {
-        child.attach(childContainer)
-      }
+      if (typeof child.attach === 'function') child.attach(childContainer)
       child.setValue(this.dataValue)
       this.hideChildErrorElements()
       return true
@@ -297,8 +292,8 @@ export function createFieldReferenceClass(FieldComponent: any) {
       const result = super.attach(element)
       this.loadRefs(element, { container: 'single', placeholder: 'single', errorMessage: 'single' })
 
-      if (this.childComponent) {
-        if (this.childComponent.destroy) this.childComponent.destroy()
+      if (this.childComponent?.destroy) {
+        this.childComponent.destroy()
         this.childComponent = null
       }
 
@@ -310,7 +305,6 @@ export function createFieldReferenceClass(FieldComponent: any) {
 
       if (this.tryAttachChild()) return result
 
-      // Schema/ref may not be available yet (_formSchema is set after createForm returns). Retry next tick.
       const id = (this._deferredAttachId = {})
       const tryDeferred = () => {
         if (this._deferredAttachId !== id) return
@@ -343,9 +337,7 @@ export function createFieldReferenceClass(FieldComponent: any) {
 
     destroy() {
       this._deferredAttachId = null
-      if (this.childComponent && this.childComponent.destroy) {
-        this.childComponent.destroy()
-      }
+      if (this.childComponent?.destroy) this.childComponent.destroy()
       this.childComponent = null
       this.refSchema = null
       super.destroy()

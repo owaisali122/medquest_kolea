@@ -1,3 +1,13 @@
+/**
+ * FormIO: Searchable Dropdown Component
+ *
+ * Wraps a React-based async searchable dropdown (react-select) inside a
+ * FormIO field. The React component is lazily loaded on first mount.
+ *
+ * Schema: type: 'searchableDropdown', key, label, data.url (API endpoint),
+ *   multiple, placeholder, minSearchLength, debounceDelay
+ */
+
 import { createRoot, Root } from 'react-dom/client'
 import React from 'react'
 
@@ -17,6 +27,8 @@ async function loadReactComponent() {
   }
   return SearchableDropdownReact
 }
+
+const ROOT_KEY = '__searchableDropdownRoot'
 
 export function createSearchableDropdownClass(FieldComponent: any) {
   return class SearchableDropdownFormIO extends FieldComponent {
@@ -56,18 +68,14 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       super(component, options, data)
       let rawUrl = component.data?.url || ''
       if (rawUrl.includes('%7B') || rawUrl.includes('%7D') || rawUrl.includes('%24')) {
-        try {
-          rawUrl = decodeURIComponent(rawUrl)
-        } catch {}
+        try { rawUrl = decodeURIComponent(rawUrl) } catch {}
       }
       this.apiUrl = rawUrl
       this.isMultiple = component.multiple ?? false
       this.currentValue = null
       const key = component.key
-      if (data && key && data[key]) {
-        this.currentValue = data[key]
-      }
-      this._onChangeBound = (v: ApiResponseItem | ApiResponseItem[] | null) => this.handleReactChange(v)
+      if (data && key && data[key]) this.currentValue = data[key]
+      this._onChangeBound = (v) => this.handleReactChange(v)
     }
 
     render() {
@@ -84,9 +92,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       const result = super.attach(element)
       this.loadRefs(element, { searchableDropdownContainer: 'single' })
       const container = (this.refs as any)?.searchableDropdownContainer
-      if (container) {
-        this.mountReactComponent(container as HTMLElement)
-      }
+      if (container) this.mountReactComponent(container as HTMLElement)
       if (!this.currentValue) {
         this._initialValueTimeout = setTimeout(() => {
           this._initialValueTimeout = null
@@ -102,13 +108,10 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       if (this.currentValue && (
         (Array.isArray(this.currentValue) && this.currentValue.length > 0) ||
         (typeof this.currentValue === 'string' && this.currentValue.length > 0)
-      )) {
-        return
-      }
+      )) return
+
       let value: ApiResponseItem | ApiResponseItem[] | string | string[] | null = null
-      if (this.data && this.data[key]) {
-        value = this.data[key]
-      }
+      if (this.data?.[key]) value = this.data[key]
       if (!value && this.element) {
         const hiddenInput = this.element.querySelector('input.searchable-dropdown-hidden-value') as HTMLInputElement | null
         if (hiddenInput?.value) {
@@ -125,27 +128,27 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       }
       if (value) {
         this.currentValue = value
-        if (this.reactRoot && SearchableDropdownReact) {
-          this.renderReactComponent(SearchableDropdownReact)
-        }
+        if (this.reactRoot && SearchableDropdownReact) this.renderReactComponent(SearchableDropdownReact)
       }
     }
 
     async mountReactComponent(container: HTMLElement) {
-      const ROOT_KEY = '__searchableDropdownRoot'
       try {
         if (!container) return
+
         if (this.reactRoot && this.reactContainer && !document.contains(this.reactContainer)) {
           try { this.reactRoot.unmount() } catch {}
           this.reactRoot = null
           this.reactContainer = null
           delete (container as any)[ROOT_KEY]
         }
+
         if (this.reactRoot && this.reactContainer && document.contains(this.reactContainer)) {
           const Component = await loadReactComponent()
           if (Component) this.renderReactComponent(Component)
           return
         }
+
         const existingRoot = (container as any)[ROOT_KEY] as Root | undefined
         if (existingRoot) {
           this.reactRoot = existingRoot
@@ -154,6 +157,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
           if (Component) this.renderReactComponent(Component)
           return
         }
+
         container.innerHTML = ''
         this.reactContainer = document.createElement('div')
         this.reactContainer.className = 'searchable-dropdown-react-mount'
@@ -162,6 +166,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
         if (!Component) return
         this.tryLoadInitialValue()
         if (!this.reactContainer) return
+
         const existingOnNode = (this.reactContainer as any)[ROOT_KEY] as Root | undefined
         if (existingOnNode) {
           this.reactRoot = existingOnNode
@@ -177,7 +182,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
 
     renderReactComponent(Component: React.ComponentType<any>) {
       if (!this.reactRoot) return
-      const props = {
+      this.reactRoot.render(React.createElement(Component, {
         name: this.component.key || 'searchableDropdown',
         apiUrl: this.apiUrl,
         isMultiple: this.isMultiple,
@@ -186,15 +191,13 @@ export function createSearchableDropdownClass(FieldComponent: any) {
         debounceDelay: this.component.debounceDelay ?? 300,
         value: this.currentValue,
         onChange: this._onChangeBound,
-      }
-      this.reactRoot.render(React.createElement(Component, props))
+      }))
     }
 
     handleReactChange(newValue: ApiResponseItem | ApiResponseItem[] | null) {
       this.currentValue = newValue
       const key = this.component.key
       if (this.data && key) this.data[key] = newValue
-      // Only write to root when at root level (not inside editgrid/datagrid row)
       if (this.root?.data && key && this.data === this.root.data) this.root.data[key] = newValue
       this.triggerChange()
     }
@@ -209,9 +212,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       if (isEmpty && this.currentValue) return
       if (value === this.currentValue) return super.setValue(value, flags)
       this.currentValue = value
-      if (this.reactRoot && SearchableDropdownReact) {
-        this.renderReactComponent(SearchableDropdownReact)
-      }
+      if (this.reactRoot && SearchableDropdownReact) this.renderReactComponent(SearchableDropdownReact)
       return super.setValue(value, flags)
     }
 
@@ -225,9 +226,7 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       if (isEmpty && this.currentValue) return
       if (value === this.currentValue) return
       this.currentValue = value
-      if (this.reactRoot && SearchableDropdownReact) {
-        this.renderReactComponent(SearchableDropdownReact)
-      }
+      if (this.reactRoot && SearchableDropdownReact) this.renderReactComponent(SearchableDropdownReact)
     }
 
     destroy() {
@@ -239,24 +238,14 @@ export function createSearchableDropdownClass(FieldComponent: any) {
       this.reactRoot = null
       this.reactContainer = null
       if (root) {
-        queueMicrotask(() => {
-          try { root.unmount() } catch {}
-        })
+        queueMicrotask(() => { try { root.unmount() } catch {} })
       }
       super.destroy()
     }
 
-    loadItems() {
-      return Promise.resolve()
-    }
-
-    updateItems() {
-      return
-    }
-
-    setItems() {
-      return
-    }
+    loadItems() { return Promise.resolve() }
+    updateItems() { return }
+    setItems() { return }
   }
 }
 

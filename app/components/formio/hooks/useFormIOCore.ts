@@ -53,14 +53,14 @@ export function useFormIOCore({
           throw new Error('FormIO can only be loaded in browser environment')
         }
 
-        await registerCustomComponents()
-
         let Formio = (window as any).Formio
         if (!Formio?.createForm) {
           const mod = await import('formiojs')
           Formio = (mod as any).Formio || (mod as any).default?.Formio || (mod as any).default
         }
         if (!Formio?.createForm) throw new Error('FormIO not available')
+
+        await registerCustomComponents(Formio)
 
         const schema = JSON.parse(JSON.stringify(formSchema))
 

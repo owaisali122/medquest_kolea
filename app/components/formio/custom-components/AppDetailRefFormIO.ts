@@ -2,17 +2,13 @@
  * FormIO: App Detail Reference Component
  *
  * Embeds another form by form ID (selectedFormId). Fetches the form schema from
- * GET /api/forms/:id and renders it inside this component's container.
+ * the API and renders it inside this component's container.
  *
  * Schema: type: 'appDetailRef', key, label, selectedFormId (required)
+ *
+ * Optional schema property `formApiBasePath` (default: '/api/forms') lets
+ * consumers override the API endpoint without touching component code.
  */
-
-function getFormio(): any {
-  if (typeof window !== 'undefined' && (window as any).Formio) {
-    return (window as any).Formio
-  }
-  return null
-}
 
 export function createAppDetailRefClass(FieldComponent: any) {
   return class AppDetailRefFormIO extends FieldComponent {
@@ -27,6 +23,7 @@ export function createAppDetailRefClass(FieldComponent: any) {
         input: true,
         hideLabel: true,
         selectedFormId: null,
+        formApiBasePath: '/api/forms',
         ...overrides,
       })
     }
@@ -57,8 +54,16 @@ export function createAppDetailRefClass(FieldComponent: any) {
       return Number.isNaN(n) ? null : n
     }
 
+    private getFormio(): any {
+      return typeof window !== 'undefined' ? (window as any).Formio ?? null : null
+    }
+
+    private isAtRoot(): boolean {
+      return !!this.root?.data && this.data === this.root.data
+    }
+
     getValue() {
-      if (this.embeddedForm && this.embeddedForm.submission) {
+      if (this.embeddedForm?.submission) {
         return this.embeddedForm.submission.data
       }
       return super.getValue()
@@ -66,7 +71,7 @@ export function createAppDetailRefClass(FieldComponent: any) {
 
     setValue(value: any, flags?: any) {
       if (value != null && value !== '') this._pendingValue = value
-      if (this.embeddedForm && this.embeddedForm.setSubmission && value != null) {
+      if (this.embeddedForm?.setSubmission && value != null) {
         this.embeddedForm.setSubmission({ data: value }, flags)
         this._pendingValue = undefined
       }
@@ -100,7 +105,7 @@ export function createAppDetailRefClass(FieldComponent: any) {
       const result = super.attach(element)
       this.loadRefs(element, { container: 'single', placeholder: 'single' })
 
-      if (this.embeddedForm && this.embeddedForm.destroy) {
+      if (this.embeddedForm?.destroy) {
         this.embeddedForm.destroy()
         this.embeddedForm = null
       }
@@ -115,14 +120,15 @@ export function createAppDetailRefClass(FieldComponent: any) {
       const placeholder = this.refs?.placeholder as HTMLElement | undefined
       if (!container || !placeholder) return result
 
-      const Formio = getFormio()
+      const Formio = this.getFormio()
       if (!Formio?.createForm) {
         this.showError('Formio not available.')
         return result
       }
 
-      const baseUrl = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : ''
-      const apiUrl = `${baseUrl}/api/forms/${formId}`
+      const basePath = this.component?.formApiBasePath || '/api/forms'
+      const origin = typeof window !== 'undefined' ? window.location?.origin ?? '' : ''
+      const apiUrl = `${origin}${basePath}/${formId}`
 
       fetch(apiUrl)
         .then((res) => {
@@ -136,27 +142,29 @@ export function createAppDetailRefClass(FieldComponent: any) {
             return null
           }
           const schemaClone = JSON.parse(JSON.stringify(schema))
-          const opts: any = {
+          return Formio.createForm(placeholder, schemaClone, {
             readOnly: this.options?.readOnly ?? false,
             noAlerts: true,
             form: schemaClone,
-          }
-          return Formio.createForm(placeholder, schemaClone, opts)
+          })
         })
         .then(async (form: any) => {
           if (!form) return
           this.embeddedForm = form
-          ;(form as any)._formSchema = form.component ?? (form.root?.component)
+          ;(form as any)._formSchema = form.component ?? form.root?.component
           if (form.ready) await form.ready
+
           const key = this.component?.key
           const existingData =
             this._pendingValue ??
             (key && this.root?.data?.[key]) ??
             (key && this.data?.[key])
-          if (existingData != null && typeof existingData === 'object' && Object.keys(existingData).length >= 0 && form.setSubmission) {
+
+          if (existingData != null && typeof existingData === 'object' && form.setSubmission) {
             form.setSubmission({ data: existingData }, { noValidate: true })
           }
           this._pendingValue = undefined
+
           form.on('change', () => {
             const key = this.component?.key
             if (!key || !this.root?.data) return
@@ -185,9 +193,7 @@ export function createAppDetailRefClass(FieldComponent: any) {
 
     destroy() {
       if (this.embeddedForm && typeof this.embeddedForm.destroy === 'function') {
-        try {
-          this.embeddedForm.destroy()
-        } catch (_) {}
+        try { this.embeddedForm.destroy() } catch (_) {}
         this.embeddedForm = null
       }
       super.destroy()

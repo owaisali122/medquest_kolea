@@ -38,9 +38,10 @@ export default function FormIORenderWizardLegacy({
       }
       try {
         if (typeof window === 'undefined') throw new Error('FormIO can only be loaded in browser environment')
-        await registerCustomComponents()
-
         const formioModule: any = await import('formiojs')
+        await registerCustomComponents(
+          (formioModule as any).Formio || (formioModule as any).default?.Formio || (formioModule as any).default
+        )
         let FormClass: any =
           formioModule.Form ||
           formioModule.default?.Form ||
